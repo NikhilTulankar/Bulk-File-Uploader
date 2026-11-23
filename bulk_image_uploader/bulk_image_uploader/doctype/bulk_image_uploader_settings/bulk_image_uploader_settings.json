@@ -1,0 +1,147 @@
+{
+ "actions": [],
+ "creation": "2026-11-23 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "storage_section",
+  "storage_backend",
+  "is_private",
+  "column_break_storage",
+  "allowed_extensions",
+  "max_file_size_mb",
+  "s3_section",
+  "s3_bucket",
+  "s3_region",
+  "s3_endpoint_url",
+  "s3_access_key_id",
+  "s3_secret_access_key",
+  "column_break_s3",
+  "s3_folder_prefix",
+  "s3_public_base_url",
+  "s3_public_read"
+ ],
+ "fields": [
+  {
+   "fieldname": "storage_section",
+   "fieldtype": "Section Break",
+   "label": "Storage"
+  },
+  {
+   "default": "Frappe Default",
+   "description": "<b>Frappe Default</b>: normal Frappe upload (if an S3 attachment app is installed, files go to S3 through it).<br><b>Local</b>: always saved on this server's site files.<br><b>Amazon S3</b>: uploaded directly to the bucket below (AWS or S3-compatible).",
+   "fieldname": "storage_backend",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Storage Backend",
+   "options": "Frappe Default\nLocal\nAmazon S3",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.storage_backend!=\"Amazon S3\"",
+   "description": "Default for uploads. Private files are only visible to logged-in users with access; keep unticked for item/website images. Can be changed per upload on the upload page.",
+   "fieldname": "is_private",
+   "fieldtype": "Check",
+   "label": "Save as Private Files"
+  },
+  {
+   "fieldname": "column_break_storage",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "jpg, jpeg, png, webp, gif, pdf, doc, docx, xls, xlsx, csv, ppt, pptx, odt, ods, txt, zip",
+   "description": "Leave empty to allow every file type.",
+   "fieldname": "allowed_extensions",
+   "fieldtype": "Data",
+   "label": "Allowed Extensions"
+  },
+  {
+   "default": "25",
+   "description": "0 = no limit (the site's own max_file_size still applies)",
+   "fieldname": "max_file_size_mb",
+   "fieldtype": "Int",
+   "label": "Max File Size (MB)"
+  },
+  {
+   "depends_on": "eval:doc.storage_backend==\"Amazon S3\"",
+   "fieldname": "s3_section",
+   "fieldtype": "Section Break",
+   "label": "Amazon S3"
+  },
+  {
+   "fieldname": "s3_bucket",
+   "fieldtype": "Data",
+   "label": "Bucket Name",
+   "mandatory_depends_on": "eval:doc.storage_backend==\"Amazon S3\""
+  },
+  {
+   "description": "e.g. ap-south-1",
+   "fieldname": "s3_region",
+   "fieldtype": "Data",
+   "label": "Region"
+  },
+  {
+   "description": "Only for S3-compatible services (MinIO, Wasabi, DigitalOcean Spaces, Cloudflare R2). Leave empty for AWS.",
+   "fieldname": "s3_endpoint_url",
+   "fieldtype": "Data",
+   "label": "Endpoint URL"
+  },
+  {
+   "description": "Leave empty to use the server's IAM role / environment credentials.",
+   "fieldname": "s3_access_key_id",
+   "fieldtype": "Data",
+   "label": "Access Key ID"
+  },
+  {
+   "fieldname": "s3_secret_access_key",
+   "fieldtype": "Password",
+   "label": "Secret Access Key"
+  },
+  {
+   "fieldname": "column_break_s3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "bulk-images",
+   "description": "Files are stored as &lt;prefix&gt;/&lt;doctype&gt;/&lt;file&gt;",
+   "fieldname": "s3_folder_prefix",
+   "fieldtype": "Data",
+   "label": "Folder Prefix"
+  },
+  {
+   "description": "Optional CDN / CloudFront URL, e.g. https://cdn.example.com",
+   "fieldname": "s3_public_base_url",
+   "fieldtype": "Data",
+   "label": "Public Base URL"
+  },
+  {
+   "default": "1",
+   "description": "Untick if your bucket blocks ACLs and is made public by a bucket policy instead. Direct S3 uploads are always public: use Frappe Default or Local for private documents.",
+   "fieldname": "s3_public_read",
+   "fieldtype": "Check",
+   "label": "Set public-read ACL"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-11-23 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Bulk Image Uploader",
+ "name": "Bulk Image Uploader Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
