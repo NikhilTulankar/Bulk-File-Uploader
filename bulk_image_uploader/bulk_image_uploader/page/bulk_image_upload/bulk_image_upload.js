@@ -205,6 +205,7 @@ class BulkFileUpload {
 					<div class="text-muted small">${__("Pick a record in each row and add its files (you can also drop files onto a row). Then click Start Upload.")}</div>
 				</div>
 				<div class="d-flex" style="gap: 8px;">
+					<button class="btn btn-primary btn-sm bfu-add-records">${__("Add Records")}</button>
 					<button class="btn btn-default btn-sm bfu-add-row">${__("Add Row")}</button>
 					<button class="btn btn-default btn-sm bfu-clear-rows">${__("Clear All")}</button>
 				</div>
@@ -213,11 +214,105 @@ class BulkFileUpload {
 			<div class="bfu-rows-total text-muted small mt-2"></div>
 		`);
 		this.$rows_card.find(".bfu-add-row").on("click", () => !this.running && this.add_row());
+		this.$rows_card.find(".bfu-add-records").on("click", () => !this.running && this.add_records_dialog());
 		this.$rows_card.find(".bfu-clear-rows").on("click", () => {
 			if (this.running) return;
 			this.clear_rows();
 			this.add_row();
 		});
+	}
+
+	// "Add Records": pick many records (or paste IDs) and add one row for each
+	add_records_dialog() {
+		const doctype = this.form.get_value("doctype");
+		if (!doctype) {
+			frappe.msgprint(__("Please select the DocType first."));
+			return;
+		}
+
+		const dialog = new frappe.ui.Dialog({
+			title: __("Add {0} Records", [__(doctype)]),
+			size: "large",
+			fields: [
+				{
+					fieldname: "records",
+					fieldtype: "MultiSelectList",
+					label: __("Select Records"),
+					description: __("Type to search, then tick as many records as you need"),
+					get_data: (txt) => frappe.db.get_link_options(doctype, txt),
+				},
+				{
+					fieldname: "pasted",
+					fieldtype: "Small Text",
+					label: __("Or paste IDs (one per line, or separated by commas)"),
+				},
+			],
+			primary_action_label: __("Add Rows"),
+			primary_action: async (values) => {
+				const picked = values.records || [];
+				const pasted = (values.pasted || "")
+					.split(/[\n,]+/)
+					.map((v) => v.trim())
+					.filter(Boolean);
+				const ids = [...new Set([...picked, ...pasted])];
+				if (!ids.length) {
+					frappe.msgprint(__("Select or paste at least one record."));
+					return;
+				}
+
+				// Check pasted IDs exist (picked ones come from the database already)
+				let missing = [];
+				if (pasted.length) {
+					const found = await frappe.xcall("frappe.client.get_list", {
+						doctype,
+						filters: { name: ["in", pasted] },
+						fields: ["name"],
+						limit_page_length: 0,
+					});
+					const found_set = new Set((found || []).map((d) => d.name));
+					missing = pasted.filter((id) => !found_set.has(id) && !picked.includes(id));
+				}
+				const valid = ids.filter((id) => !missing.includes(id));
+
+				const added = this.add_records(valid);
+				dialog.hide();
+
+				let msg = __("{0} row(s) added", [added]);
+				if (valid.length - added) msg += ", " + __("{0} already in the table", [valid.length - added]);
+				frappe.show_alert({ message: msg, indicator: added ? "green" : "orange" });
+				if (missing.length) {
+					frappe.msgprint({
+						title: __("Not found"),
+						indicator: "orange",
+						message: __("These {0} IDs were not found and were skipped:", [__(doctype)]) +
+							"<br>" + missing.map((m) => frappe.utils.escape_html(m)).join("<br>"),
+					});
+				}
+			},
+		});
+		dialog.show();
+	}
+
+	add_records(ids) {
+		const existing = new Set(
+			this.rows.map((r) => (r.control.get_value() || "").trim()).filter(Boolean)
+		);
+		// Reuse empty rows (no record, no files) before adding new ones
+		const empty_rows = this.rows.filter((r) => !(r.control.get_value() || "").trim() && !r.files.length);
+		let added = 0;
+		ids.forEach((id) => {
+			if (existing.has(id)) return;
+			existing.add(id);
+			const row = empty_rows.shift();
+			if (row) {
+				row.control.set_value(id);
+			} else {
+				this.add_row(id);
+			}
+			added++;
+		});
+		this.update_rows_total();
+		return added;
 	}
 
 	clear_rows() {
