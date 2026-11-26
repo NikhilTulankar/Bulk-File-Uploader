@@ -1,4 +1,4 @@
-# Bulk Image Uploader for ERPNext / Frappe v15+
+# Bulk File Uploader for ERPNext / Frappe v15+
 
 This app uploads many files at once (images, PDF, Word, Excel and so on) to **any DocType** and links them to records. It has three modes:
 
